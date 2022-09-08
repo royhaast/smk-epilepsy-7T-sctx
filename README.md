@@ -8,7 +8,7 @@ Inputs:
   - MP2RAGE data
 
 Singularity containers required:
- - ...
+ - Gradient-distortion correction
  - Connectome Workbench
 
 ## Authors

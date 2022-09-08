@@ -1,0 +1,49 @@
+# Snakefile
+import os, re, glob, fnmatch
+from os.path import join
+import numpy as np
+import pandas as pd
+
+configfile: 'config/config.yml'
+
+# Load list of subject (BIDS) IDs
+subjects = pd.read_csv(config['participants'])
+subjects = subjects['ID']
+
+# Define which T1w run to use in case there are multiple runs
+t1w_picker = pd.read_csv(config['t1w_picker'])
+t1w_to_use = [ '{:02d}'.format(
+    t1w_picker.loc[t1w_picker['subject'] == s]['use'].values[0]
+    ) for s in subjects ]
+
+t1w_iterator = zip(subjects,t1w_to_use)
+t1w_dict = dict(t1w_iterator)
+
+wildcard_constraints:
+    subject = "|".join(subjects),
+    run = "[1-2]",
+    atlas = "ami|thomas|subcortex"
+
+# Expected output
+rule all:
+    input:
+        ...
+
+# MP2RAGE
+# include: 'rules/mp2rage.smk'
+
+# AMI-MALF
+# include: 'rules/ami_malf.smk'
+
+# THOMAS
+# include: 'rules/wmnulling.smk'
+# include: 'rules/thomas.smk'
+
+# SURFACE-BASED MORPHOMETRY
+# include: 'rules/surfmorph.smk'
+
+module other_workflow:
+    snakefile: "../surfmorph_workflow/Snakefile"
+    config: "../surfmorph_workflow/config.json" #Snakefile"config["other-workflow"]
+
+use rule * from other_workflow as other_*
