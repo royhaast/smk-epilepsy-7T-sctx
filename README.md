@@ -19,6 +19,13 @@ Snakemake workflow for processing BIDSified 7T MRI data as described in "title h
 :lock: Also required:
  - MATLAB
 
+## Python packages that are used
+
+- Numpy
+- Pandas
+- Nibabel
+- PyVista
+
 ## External scripts that are used
 
 - PreSurfer is developed by Sriranga Kashyap (@srikash). You can download and cite from here: 
