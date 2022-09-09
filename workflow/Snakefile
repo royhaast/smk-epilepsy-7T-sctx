@@ -27,7 +27,7 @@ wildcard_constraints:
 # Expected output
 rule all:
     input:
-        ...
+        rules.other_all.input
 
 # MP2RAGE
 include: 'rules/mp2rage.smk'
@@ -39,10 +39,8 @@ include: 'rules/ami_malf.smk'
 include: 'rules/thomas.smk'
 
 # SURFACE-BASED MORPHOMETRY
-# include: 'rules/surfmorph.smk'
-
 module other_workflow:
     snakefile: "../surfmorph_workflow/Snakefile"
-    config: "../surfmorph_workflow/config.json" #Snakefile"config["other-workflow"]
+    config: "../surfmorph_workflow/config/config.json"
 
 use rule * from other_workflow as other_*

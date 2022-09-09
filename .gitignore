@@ -1,5 +1,6 @@
 # Study-specific ignore
 *.nii.gz
+test_data/
 
 # Standard Python stuff
 # Byte-compiled / optimized / DLL files

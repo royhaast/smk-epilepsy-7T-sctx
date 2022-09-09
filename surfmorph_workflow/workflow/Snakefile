@@ -1,0 +1,54 @@
+# Snakefile
+import os, re, glob, fnmatch
+from os.path import join
+import numpy as np
+import pandas as pd
+
+# Load list of subject (BIDS) IDs
+subjects = pd.read_csv(config['participants'])
+subjects = subjects['ID']
+
+# Wildcards
+rois = ['thalamus']
+hemis = ['left','right']
+iters = range(config['nr_iterations'])
+
+wildcard_constraints:
+    subject="[A-Z0-9]+",
+    iter="[1-4]",
+    rois="[a-zA-Z]+"
+
+# Expected output
+rule all:
+    input:
+        ## PRESURFMORPH
+        # expand('deriv/surfmorph_{atlas}/labels/sub-{subject}_{hemi}/anat/sub-{subject}_{hemi}_brain_T1w.nii.gz',subject=subjects, hemi=['Lflip','R']),
+        # expand('deriv/surfmorph_{atlas}/labels/sub-{subject}_{hemi}/anat/sub-{subject}_{hemi}_{roi}.nii.gz', atlas=config['atlas'], subject=subjects, hemi=['Lflip','R'], roi=rois),
+        # expand('deriv/surfmorph_{atlas}/labels/participants.tsv', atlas=config['atlas']),
+        ## SURFMORPH
+        # expand('deriv/surfmorph_{atlas}/displacement/{roi}_group1_iter3.done', atlas=config['atlas'], roi=rois),
+        # expand('deriv/surfmorph_{atlas}/displacement/work/{roi}_iter3/sub-{subject}_{hemi}/{roi}.surf_inout.txt', atlas=config['atlas'], subject=subjects, hemi=['Lflip','R'], roi=rois)
+        # expand('deriv/surfmorph_{atlas}/displacement/{roi}_participant1_iter3.done', atlas=config['atlas'], roi=rois),
+        ## POSTSURFMORPH
+        # expand('deriv/postsurfmorph_{atlas}/sub-{subject}_{hemi}/sub-{subject}_hemi-{hemi}_space-{space}_label-{roi}.surf.gii', atlas=config['atlas'], subject=subjects, roi=rois, hemi=['L','R'], space=['MNI152NLin2009cAsym','T1w']),
+        # expand('deriv/surfmorph_{atlas}/displacement/sub-{subject}_L/anat/sub-{subject}_Lorig_space-{space}_label-{roi}_surfmorphinout.surf.gii', atlas=config['atlas'], subject=subjects, roi=rois, space=['MNI152NLin2009cAsym','T1w']),
+        # expand('deriv/postsurfmorph_{atlas}/sub-{subject}_{hemi}/sub-{subject}_hemi-{hemi}_label-thalamus_{metric}-smoothed.shape.gii', atlas=['ami','thomas'], subject=subjects, hemi=['L','R'], metric=['displacement','curvature','area']),
+        # expand('deriv/postsurfmorph_ami/sub-{subject}_{hemi}/sub-{subject}_hemi-{hemi}_label-{roi}_{metric}-smoothed.shape.gii', subject=subjects, roi=rois, hemi=['L','R'], metric=['displacement','curvature','area']),
+        # expand('deriv/atlas_{atlas}/sub-all/sub-all_label-{roi}_atlas.border', atlas=config['atlas'], roi=rois),
+        ## SUMMARIES
+        # expand('deriv/summary_shape_{atlas}/sub-{subject}/sub-{subject}_label-thalamus_shape.csv', atlas=['ami','thomas'], subject=subjects_displacement),
+        # expand('deriv/summary_shape_ami/sub-{subject}/sub-{subject}_label-{roi}_shape.csv', subject=subjects_displacement, roi=rois),
+        expand('deriv/summary_shape_{atlas}/sub-all/sub-{group}_atlas-{atlas}_label-thalamus_shape.csv', atlas=['ami','thomas'], group=['controls','patients']),
+        expand('deriv/summary_shape_ami/sub-all/sub-{group}_atlas-subcortex_shape.csv', atlas=['ami','thomas'], group=['controls','patients'], roi=rois)
+
+# Presurfmorph
+include: 'rules/presurfmorph.smk'
+
+# Surface-based morphology
+include: 'rules/surfmorph.smk'
+
+# Postsurfmorph
+include: 'rules/postsurfmorph.smk'
+
+# Atlas operations
+include: 'rules/atlas.smk'

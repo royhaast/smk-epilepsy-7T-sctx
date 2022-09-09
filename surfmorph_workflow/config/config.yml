@@ -1,0 +1,63 @@
+bids_decoder: resources/bids_decoder.csv
+
+# What atlas to use as input
+atlas: ami
+
+# Lut for atlas propogation onto surface
+lut:
+  thomas: resources/thomas_lut.txt
+  ami: resources/ami_lut_hemi-R.txt
+
+atlas_lut:
+  thomas: resources/thomaslut.csv
+  ami: resources/amilut.csv
+
+# Input paths
+deriv:
+  controls: /scratch/rhaast/epilepsy_controls/deriv
+  patients: /scratch/rhaast/epilepsy_patients/deriv
+
+# Surfmorph
+surfmorph_script: /project/6050199/rhaast/01_Software/surfmorph/surfmorph.sh
+nr_iterations: 4
+rois:
+  ami:
+    thalamus:
+      left: [4,5,14,15,16,17,19,20,26,27,28,29,30,31]
+      right: [54,55,64,65,66,67,69,70,76,77,78,79,80,81]
+    striatum:
+      left: [1,2,9]
+      right: [51,52,59]
+    claustrum:
+      left: [3]
+      right: [53]
+    GPe:
+      left: [6]
+      right: [56]
+    GPi:
+      left: [7]
+      right: [57]
+  thomas:
+    thalamus:
+      left: [1]
+      right: [1]
+    pulvinar:
+      left: [8]
+      right: [8]
+    md:
+      left: [12]
+      right: [12]
+    av:
+      left: [2]
+      right: [2]
+    vlp:
+      left: [6]
+      right: [6]
+
+# For Graham
+containers:
+  surfmorph: /project/6050199/akhanf/singularity/bids-apps/khanlab_surfmorph_latest.sif
+  itksnap: /project/6050199/akhanf/singularity/pyushkevich_itksnap_latest.sif
+  mrtrix: /project/6050199/akhanf/singularity/bids-apps/brainlife_mrtrix3_3.0.2.sif
+  fsl_604: /project/6050199/akhanf/singularity/bids-apps/fsl_6.0.4_cuda9.1.sif
+  freesurfer: /project/6050199/akhanf/singularity/bids-apps/nipreps_fmriprep_20.2.6.sif
