@@ -13,7 +13,8 @@ Snakemake workflow for processing BIDSified 7T MRI data as described in "title h
  - Gradient-distortion correction (https://hub.docker.com/r/khanlab/gradcorrect)
  - fMRIPrep (https://hub.docker.com/r/nipreps/fmriprep)
  - Connectome Workbench (https://hub.docker.com/r/khanlab/connectome-workbench)
- - 
+ - Surfmorph (https://hub.docker.com/r/khanlab/surfmorph)
+ - FSL
 
 :lock: Also required:
  - MATLAB

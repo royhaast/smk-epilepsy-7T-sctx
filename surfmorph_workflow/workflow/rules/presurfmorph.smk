@@ -1,33 +1,32 @@
 # Prep THOMAS data for surface-based morphometry
-def define_thomas_input(wildcards, atlas=config['atlas']):
+def define_input(wildcards, atlas=config['atlas']):
     subject = '{wildcards.subject}'.format(wildcards=wildcards)
-    group   = 'controls' if subject[0] == 'C' else 'patients'
 
     if atlas == 'thomas':
         return {
-            't1w': join(config['deriv'][group],'subcortical_atlas/sub-{subject}/THOMAS_T1MAP_MASKED/sub-{subject}_acq-MP2RAGE_proc-B1map+PreSurfer_T1w.nii.gz'.format(subject=subject)),
+            't1w': '../../deriv/atlas/sub-{subject}/THOMAS_T1MAP/sub-{subject}_acq-MP2RAGE_proc-B1map+PreSurfer_T1w.nii.gz'.format(subject=subject),
             'seg': [
-                join(config['deriv'][group],'subcortical_atlas/sub-{subject}/THOMAS_T1MAP_MASKED/left/1-THALAMUSfull.nii.gz'.format(subject=subject)),
-                join(config['deriv'][group],'subcortical_atlas/sub-{subject}/THOMAS_T1MAP_MASKED/right/1-THALAMUSfull.nii.gz'.format(subject=subject))
+                '../../deriv/atlas/sub-{subject}/THOMAS_T1MAP/left/1-THALAMUSfull.nii.gz'.format(subject=subject),
+                '../../deriv/atlas/sub-{subject}/THOMAS_T1MAP/right/1-THALAMUSfull.nii.gz'.format(subject=subject)
                 ],
             'atlas': [
-                join(config['deriv'][group],'subcortical_atlas/sub-{subject}/THOMAS_T1MAP_MASKED/left/thomasfull.nii.gz'.format(subject=subject)),
-                join(config['deriv'][group],'subcortical_atlas/sub-{subject}/THOMAS_T1MAP_MASKED/right/thomasrfull.nii.gz'.format(subject=subject)),
+                '../../deriv/atlas/sub-{subject}/THOMAS_T1MAP/left/thomasfull.nii.gz'.format(subject=subject),
+                '../../deriv/atlas/sub-{subject}/THOMAS_T1MAP/right/thomasrfull.nii.gz'.format(subject=subject),
                 ]
         }
     elif atlas == 'ami':
         return {
-            't1w': join(config['deriv'][group],'subcortical_atlas/sub-{subject}/7TAMI/sub-{subject}_acq-MP2RAGE_proc-B1map+PreSurfer_T1w.nii.gz'.format(subject=subject)),
-            'seg': join(config['deriv'][group],'subcortical_atlas/sub-{subject}/7TAMI/sub-{subject}_space-native_7TAMI60_qfullJF_Labels.nii.gz'.format(subject=subject)),
+            't1w': '../../deriv/atlas/sub-{subject}/7TAMI/sub-{subject}_acq-MP2RAGE_proc-B1map+PreSurfer_T1w.nii.gz'.format(subject=subject)),
+            'seg': '../../deriv/atlas/sub-{subject}/7TAMI/sub-{subject}_space-native_7TAMI60_qfullJF_Labels.nii.gz'.format(subject=subject)),
             'atlas': [
-                join(config['deriv'][group],'subcortical_atlas/sub-{subject}/7TAMI/sub-{subject}_space-native_7TAMI60_qfullJF_Labels.nii.gz'.format(subject=subject)),
-                join(config['deriv'][group],'subcortical_atlas/sub-{subject}/7TAMI/sub-{subject}_space-native_7TAMI60_qfullJF_Labels.nii.gz'.format(subject=subject))
+                '../../deriv/atlas/sub-{subject}/7TAMI/sub-{subject}_space-native_7TAMI60_qfullJF_Labels.nii.gz'.format(subject=subject)),
+                '../../deriv/atlas/sub-{subject}/7TAMI/sub-{subject}_space-native_7TAMI60_qfullJF_Labels.nii.gz'.format(subject=subject))
                 ]
         }    
 
 # Perform ACPC alignment
 rule acpc_alignment:
-    input: unpack(define_thomas_input)
+    input: unpack(define_input)
     output: 'deriv/presurfmorph/sub-{subject}/sub-{subject}_T1w_to_MNI152NLin2009cAsym_type-fsl.mat'
     params:
         mni = 'resources/MNI152NLin2009cAsym_t1_brain.nii.gz'
@@ -47,7 +46,7 @@ rule acpc_alignment:
 
 rule acpc_fsl_to_itk:
     input:
-        unpack(define_thomas_input), 
+        unpack(define_input), 
         xfm = 'deriv/presurfmorph/sub-{subject}/sub-{subject}_T1w_to_MNI152NLin2009cAsym_type-fsl.mat'
     output:
         fwd = 'deriv/presurfmorph/sub-{subject}/sub-{subject}_T1w_to_MNI152NLin2009cAsym_type-itk.txt',
@@ -64,13 +63,13 @@ rule acpc_fsl_to_itk:
 
 rule apply_acpc_alignment:
     input:
-        unpack(define_thomas_input),
+        unpack(define_input),
         xfm = 'deriv/presurfmorph/sub-{subject}/sub-{subject}_T1w_to_MNI152NLin2009cAsym_type-itk.txt'
     output: 'deriv/presurfmorph/sub-{subject}/sub-{subject}_T1w_to_MNI152NLin2009cAsym.nii.gz',
     params:
         mni = 'resources/MNI152NLin2009cAsym_t1_brain.nii.gz'
     group: 'presurfmorph'
-    # container: config['containers']['surfmorph']    
+    container: config['containers']['fmriprep']    
     shell:
         """
         antsApplyTransforms -d 3 -i {input.t1w} -r {params.mni} -o {output} -t {input.xfm} -n BSpline -u int
@@ -79,7 +78,7 @@ rule apply_acpc_alignment:
 # Prepare FreeSurfer data for surface-based morphometry        
 rule prep_labels_surfmorph:
     input: 
-        unpack(define_thomas_input),
+        unpack(define_input),
         xfm = 'deriv/presurfmorph/sub-{subject}/sub-{subject}_T1w_to_MNI152NLin2009cAsym_type-itk.txt'
     output:
         t1w = 'deriv/surfmorph_{atlas}/labels/sub-{subject}/anat/sub-{subject}_brain_T1w.nii.gz',
@@ -87,7 +86,7 @@ rule prep_labels_surfmorph:
     params:
         rois = rois,
         structures = config['rois'][config['atlas']],
-        script = "../scripts/prep_thomas.py" if config['atlas'] == 'thomas' else "../scripts/prep_surfmorph.py",
+        script = "scripts/prep_thomas.py"
         mni = 'resources/MNI152NLin2009cAsym_t1_brain.nii.gz'
     group: 'presurfmorph'  
     script: "{params.script}"
