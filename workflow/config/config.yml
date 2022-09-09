@@ -1,0 +1,9 @@
+bids_decoder: resources/participants.tsv
+t1w_picker: resources/t1w_run_picker.csv
+
+containers:
+    gradcorrect: /home/rhaast/00_SOFTWARE/containers/khanlab_gradcorrect_latest.sif
+    fmriprep: /home/rhaast/00_SOFTWARE/containers/poldrack_fmriprep_latest.sif
+    freesurfer: /home/rhaast/00_SOFTWARE/containers/pwighton_freesurfer_v7.1.1.sif
+
+gradientfile: /DATA_VOL_PROJECTS/CNS/EPILEPSY/Epinov_pipeline/template/gradCorrect/coeff_SC72CD.grad

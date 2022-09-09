@@ -1,3 +1,6 @@
+# The pipeline expects the data to be in BIDS format with a file
+# tar2bids.done as checkpoint for each subject.
+
 # Gradient-distortion correction
 rule gradcorrect:
     input: 'bids/sub-{subject}/tar2bids.done'
@@ -14,7 +17,7 @@ rule gradcorrect:
         singularity exec {params.gradcorrect} {params.script} {params.bids_folder} {params.deriv_folder}/gradcorrect participant --grad_coeff_file {params.coeff} --participant_label {wildcards.subject}
         """   
 
-# Function to define paths
+# Function to define input paths
 def collect_input(wildcards,run='01'):
     subject = f'{wildcards.subject}'
     run = t1w_dict[subject]

@@ -4,7 +4,7 @@ from os.path import join
 import numpy as np
 import pandas as pd
 
-configfile: 'config/config.yml'
+configfile: 'workflow/config/config.yml'
 
 # Load list of subject (BIDS) IDs
 subjects = pd.read_csv(config['participants'])
