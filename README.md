@@ -4,12 +4,17 @@ Snakemake workflow for processing BIDSified 7T MRI data as described in "title h
 :minidisc: Inputs:
 - participants.tsv file with target subject IDs
 - For each target subject:
-  - BIDS dataset
-  - MP2RAGE data
+  - BIDS dataset that includes
+    - B1+ map
+    - MP2RAGE data
 
 :computer: Singularity containers required:
- - Gradient-distortion correction
- - Connectome Workbench
+ - Gradient-distortion correction (https://hub.docker.com/r/khanlab/gradcorrect)
+ - fMRIPrep (https://hub.docker.com/r/nipreps/fmriprep)
+ - Connectome Workbench (https://hub.docker.com/r/khanlab/connectome-workbench)
+
+:lock: Also required:
+ - MATLAB
 
 ## External scripts that are used
 

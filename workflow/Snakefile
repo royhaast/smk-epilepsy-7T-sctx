@@ -30,14 +30,13 @@ rule all:
         ...
 
 # MP2RAGE
-# include: 'rules/mp2rage.smk'
+include: 'rules/mp2rage.smk'
 
 # AMI-MALF
-# include: 'rules/ami_malf.smk'
+include: 'rules/ami_malf.smk'
 
 # THOMAS
-# include: 'rules/wmnulling.smk'
-# include: 'rules/thomas.smk'
+include: 'rules/thomas.smk'
 
 # SURFACE-BASED MORPHOMETRY
 # include: 'rules/surfmorph.smk'

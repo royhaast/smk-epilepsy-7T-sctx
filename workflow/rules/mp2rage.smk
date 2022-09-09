@@ -212,72 +212,15 @@ rule asegstats:
         asegstats2table --subjects {params.subjects} -t {output}
         """
 
-# Transform subject T1w to 7T-AMI
-rule t1w_to_7TAMI:
-    input:
-        template = 'resources/7TAMI_T1w_bet.nii.gz',
-        t1w = 'deriv/presurfer/sub-{subject}/sub-{subject}_acq-MP2RAGE_proc-B1map+PreSurfer_T1w.nii.gz'
-    output:
-        affine = 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_T1w_bet_2_subj0GenericAffine.mat',
-        warp = 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_T1w_bet_2_subj1Warp.nii.gz',
-        invwarp = 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_T1w_bet_2_subj1InverseWarp.nii.gz'
-    group: 'mp2rage'
-    container: config['containers']['fmriprep']
-    shell:
-        """
-        antsRegistrationSyN.sh -d 3 -f {input.t1w} -m {input.template} -o deriv/atlas/sub-{wildcards.subject}/7TAMI/7TAmi_T1w_bet_2_subj -n 6 -t s
-        """
-
-# Combine affine and warpfield
-rule composite_transform:
-    input:
-        template = 'resources/7TAMI_T1w_bet.nii.gz',
-        t1w = 'deriv/presurfer/sub-{subject}/sub-{subject}_acq-MP2RAGE_proc-B1map+PreSurfer_T1w.nii.gz',    
-        affine = 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_T1w_bet_2_subj0GenericAffine.mat',
-        warp = 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_T1w_bet_2_subj1Warp.nii.gz'
-    output: 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_T1w_bet_2_subj1CompositeWarp.nii.gz'
-    group: 'mp2rage'
-    container: config['containers']['fmriprep']
-    shell:
-        """
-        antsApplyTransforms -d 3 -i {input.template} -r {input.t1w} -o [{output},1] -t {input.warp} -t [{input.affine},1]
-        """    
-
-# Get Jacobian determinant from warpfield
-rule composite_jacobian_determinant:
-    input: 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_T1w_bet_2_subj1CompositeWarp.nii.gz'
-    output: 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_T1w_bet_2_subj1CompositeWarp_JacL.nii.gz'
-    group: 'mp2rage'
-    container: config['containers']['fmriprep']
-    shell:
-        """
-        CreateJacobianDeterminantImage 3 {input} {output} 1 1
-        """ 
-
-# Apply transform to 7T-AMI atlas
-rule transform_7TAMI:
-    input:
-        atlas = 'resources/7TAMI_DGN_SBA_v9.nii.gz',
-        t1w = 'deriv/presurfer/sub-{subject}/sub-{subject}_acq-MP2RAGE_proc-B1map+PreSurfer_T1w.nii.gz',
-        affine = 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_T1w_bet_2_subj0GenericAffine.mat',
-        warp = 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_T1w_bet_2_subj1Warp.nii.gz'
-    output: 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_DGN_SBA_v9_to_subj.nii.gz'
-    group: 'mp2rage'
-    container: config['containers']['fmriprep']
-    shell:
-        """
-        antsApplyTransforms -d 3 -i {input.atlas} -r {input.t1w} -o {output} -n MultiLabel -t {input.warp} -t {input.affine}
-        """    
-
-# Generate snapshot of WMn T1 map with THOMAS result overlaid
-rule snapshot_7TAMI_seg:
-    input: 
-        t1map = 'deriv/subcortical_atlas/sub-{subject}/THOMAS_T1MAP/sub-{subject}_acq-MP2RAGE_desc-WMnull+denoised_T1map.nii.gz',
-        atlas = 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_DGN_SBA_v9_to_subj.nii.gz'
-    output: 'deriv/snapshots/7TAMI/sub-{subject}_qc.png'
-    group: 'mp2rage'
-    shell:
-        """
-        fsleyes render --scene lightbox --outfile {output} --crop 5 --zaxis 2 --zrange 120 180 -ss 1.2 \
-        -nc 8 {input.t1map} {input.atlas} -ot label
-        """
+# # Generate snapshot of WMn T1 map with THOMAS result overlaid
+# rule snapshot_7TAMI_seg:
+#     input: 
+#         t1map = 'deriv/subcortical_atlas/sub-{subject}/THOMAS_T1MAP/sub-{subject}_acq-MP2RAGE_desc-WMnull+denoised_T1map.nii.gz',
+#         atlas = 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_DGN_SBA_v9_to_subj.nii.gz'
+#     output: 'deriv/snapshots/7TAMI/sub-{subject}_qc.png'
+#     group: 'mp2rage'
+#     shell:
+#         """
+#         fsleyes render --scene lightbox --outfile {output} --crop 5 --zaxis 2 --zrange 120 180 -ss 1.2 \
+#         -nc 8 {input.t1map} {input.atlas} -ot label
+#         """

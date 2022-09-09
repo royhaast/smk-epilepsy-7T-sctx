@@ -2,13 +2,70 @@
 # Currently this pipeline is not yet publicly available but hopefully soon.
 # Instead single-step coregistration results will be used here.
 
+# Transform subject T1w to 7T-AMI
+rule t1w_to_7TAMI:
+    input:
+        template = 'resources/7TAMI_T1w_bet.nii.gz',
+        t1w = 'deriv/presurfer/sub-{subject}/sub-{subject}_acq-MP2RAGE_proc-B1map+PreSurfer_T1w.nii.gz'
+    output:
+        affine = 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_T1w_bet_2_subj0GenericAffine.mat',
+        warp = 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_T1w_bet_2_subj1Warp.nii.gz',
+        invwarp = 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_T1w_bet_2_subj1InverseWarp.nii.gz'
+    group: 'mp2rage'
+    container: config['containers']['fmriprep']
+    shell:
+        """
+        antsRegistrationSyN.sh -d 3 -f {input.t1w} -m {input.template} -o deriv/atlas/sub-{wildcards.subject}/7TAMI/7TAmi_T1w_bet_2_subj -n 6 -t s
+        """
+
+# Combine affine and warpfield
+rule composite_transform:
+    input:
+        template = 'resources/7TAMI_T1w_bet.nii.gz',
+        t1w = 'deriv/presurfer/sub-{subject}/sub-{subject}_acq-MP2RAGE_proc-B1map+PreSurfer_T1w.nii.gz',    
+        affine = 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_T1w_bet_2_subj0GenericAffine.mat',
+        warp = 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_T1w_bet_2_subj1Warp.nii.gz'
+    output: 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_T1w_bet_2_subj1CompositeWarp.nii.gz'
+    group: 'mp2rage'
+    container: config['containers']['fmriprep']
+    shell:
+        """
+        antsApplyTransforms -d 3 -i {input.template} -r {input.t1w} -o [{output},1] -t {input.warp} -t [{input.affine},1]
+        """    
+
+# Get Jacobian determinant from warpfield
+rule composite_jacobian_determinant:
+    input: 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_T1w_bet_2_subj1CompositeWarp.nii.gz'
+    output: 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_T1w_bet_2_subj1CompositeWarp_JacL.nii.gz'
+    group: 'mp2rage'
+    container: config['containers']['fmriprep']
+    shell:
+        """
+        CreateJacobianDeterminantImage 3 {input} {output} 1 1
+        """ 
+
+# Apply transform to 7T-AMI atlas
+rule transform_7TAMI:
+    input:
+        atlas = 'resources/7TAMI_DGN_SBA_v9.nii.gz',
+        t1w = 'deriv/presurfer/sub-{subject}/sub-{subject}_acq-MP2RAGE_proc-B1map+PreSurfer_T1w.nii.gz',
+        affine = 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_T1w_bet_2_subj0GenericAffine.mat',
+        warp = 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_T1w_bet_2_subj1Warp.nii.gz'
+    output: 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_DGN_SBA_v9_to_subj.nii.gz'
+    group: 'mp2rage'
+    container: config['containers']['fmriprep']
+    shell:
+        """
+        antsApplyTransforms -d 3 -i {input.atlas} -r {input.t1w} -o {output} -n MultiLabel -t {input.warp} -t {input.affine}
+        """    
+
 # Make sure the 7T-AMI MALF results are in same space as the initial MP2RAGE data
 rule resample_ami_malf:
     input:
-        ami = 'deriv/tmp/ami_malf/sub-{subject}/sub-{subject}_7TAMI60qfullJF_Labels.nii.gz',
+        ami = 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_DGN_SBA_v9_to_subj.nii.gz',
         t1 = 'deriv/presurfer/sub-{subject}/T1map_B1corrected.nii'
     output:
-        ami = 'deriv/tmp/summary_ami_malf/sub-{subject}/sub-{subject}_space-native_7TAMI60_qfullJF_Labels.nii.gz',
+        ami = 'deriv/summary/7TAMI/sub-{subject}/sub-{subject}_space-native_7TAMI60_qfullJF_Labels.nii.gz',
     shell:
         """
         mri_convert {input.ami} {output} -rl {input.t1} -rt nearest
@@ -18,12 +75,12 @@ rule resample_ami_malf:
 rule create_symlinks_for_surfmorph:
 #TODO edit to create symlinks
     input:
-        ami = 'deriv/tmp/summary_ami_malf/sub-{subject}/sub-{subject}_space-native_7TAMI60_qfullJF_Labels.nii.gz',
+        ami = 'deriv/summary/7TAMI/sub-{subject}/sub-{subject}_space-native_7TAMI60_qfullJF_Labels.nii.gz',
         t1w = 'deriv/presurfer/sub-{subject}/sub-{subject}_acq-MP2RAGE_proc-B1map+PreSurfer_T1w.nii.gz',
         mask = 'deriv/presurfer/sub-{subject}/presurf_INV2/sub-{subject}_inv-2_part-mag_MP2RAGE_stripmask.nii.gz'
     output:
-        ami = 'deriv/tmp/copy_for_shape/sub-{subject}/7TAMI/sub-{subject}_space-native_7TAMI60_qfullJF_Labels.nii.gz',
-        t1w = 'deriv/tmp/copy_for_shape/sub-{subject}/7TAMI/sub-{subject}_acq-MP2RAGE_proc-B1map+PreSurfer_T1w.nii.gz'
+        ami = 'deriv/copy_for_shape/sub-{subject}/7TAMI/sub-{subject}_space-native_7TAMI60_qfullJF_Labels.nii.gz',
+        t1w = 'deriv/copy_for_shape/sub-{subject}/7TAMI/sub-{subject}_acq-MP2RAGE_proc-B1map+PreSurfer_T1w.nii.gz'
     shell:
         """
         fslmaths {input.mask} -bin -mul {input.ami} {output.ami}
@@ -34,53 +91,44 @@ rule create_symlinks_for_surfmorph:
 rule thalamic_ami_malf_stats:
     input:
         stats = 'deriv/freesurfer/aseg_volume.txt',
-        thalamus = 'deriv/tmp/summary_ami_malf/sub-{subject}/sub-{subject}_space-native_7TAMI60_qfullJF_Labels.nii.gz',
+        thalamus = 'deriv/summary/7TAMI/sub-{subject}/sub-{subject}_space-native_7TAMI60_qfullJF_Labels.nii.gz',
         t1 = 'deriv/presurfer/sub-{subject}/T1map_B1corrected.nii',
         mask = 'deriv/presurfer/sub-{subject}/presurf_INV2/sub-{subject}_inv-2_part-mag_MP2RAGE_stripmask.nii.gz'
     params:
-        dbm = 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_T1w_bet_2_subj1CompositeWarp_JacL.nii.gz',
-        r2s = 'deriv/qsm/sub-{subject}/sub-{subject}_space-MP2RAGE_proc-GDC_R2s.nii.gz',
-        qsm = 'deriv/qsm/sub-{subject}/sub-{subject}_space-MP2RAGE_proc-GDC_QSM.nii.gz',
-        fa  = 'deriv/tmp/dwi/sub-{subject}/metrics/sub-{subject}_space-anat_fa.nii.gz',
-        adc = 'deriv/tmp/dwi/sub-{subject}/metrics/sub-{subject}_space-anat_adc.nii.gz',  
+        dbm = 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_T1w_bet_2_subj1CompositeWarp_JacL.nii.gz'
         t1_threshold = 3000,  
-        subject_info = 'resources/bids_decoder.csv',
+        subject_info = 'resources/participants.tsv',
         lut = 'resources/amilut.csv'
     output:
-        pkl = 'deriv/tmp/summary_ami_malf/sub-{subject}/sub-{subject}_ami_summary.pkl',
-        csv = 'deriv/tmp/summary_ami_malf/sub-{subject}/sub-{subject}_ami_summary.csv'
+        pkl = 'deriv/summary/7TAMI/sub-{subject}/sub-{subject}_ami_summary.pkl',
+        csv = 'deriv/summary/7TAMI/sub-{subject}/sub-{subject}_ami_summary.csv'
     group: 'subj'
-    script: '../../scripts/extract_thalamus_ami.py'
+    script: '../../scripts/python/extract_thalamus_ami.py'
 
 # Extract statistics from 7T-AMI non-thalamic segmentations
 rule subcortical_ami_malf_stats:
     input:
         stats = 'deriv/freesurfer/aseg_volume.txt',
-        subcortex = 'deriv/tmp/summary_ami_malf/sub-{subject}/sub-{subject}_space-native_7TAMI60_qfullJF_Labels.nii.gz',
-        amygdala = 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_Amygdala_to_subj.nii.gz',
+        subcortex = 'deriv/summary/7TAMI/sub-{subject}/sub-{subject}_space-native_7TAMI60_qfullJF_Labels.nii.gz',
         t1 = 'deriv/presurfer/sub-{subject}/T1map_B1corrected.nii',
         mask = 'deriv/presurfer/sub-{subject}/presurf_INV2/sub-{subject}_inv-2_part-mag_MP2RAGE_stripmask.nii.gz'
     params:
-        dbm = 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_T1w_bet_2_subj1CompositeWarp_JacL.nii.gz',
-        r2s = 'deriv/qsm/sub-{subject}/sub-{subject}_space-MP2RAGE_proc-GDC_R2s.nii.gz',
-        qsm = 'deriv/qsm/sub-{subject}/sub-{subject}_space-MP2RAGE_proc-GDC_QSM.nii.gz',
-        fa  = 'deriv/tmp/dwi/sub-{subject}/metrics/sub-{subject}_space-anat_fa.nii.gz',
-        adc = 'deriv/tmp/dwi/sub-{subject}/metrics/sub-{subject}_space-anat_adc.nii.gz',   
+        dbm = 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_T1w_bet_2_subj1CompositeWarp_JacL.nii.gz', 
         t1_threshold = 3000,   
-        subject_info = 'resources/bids_decoder.csv',
+        subject_info = 'resources/participants.tsv',
         lut = 'resources/amilut_subcortex.csv'
     output:
-        pkl = 'deriv/tmp/summary_ami_malf/sub-{subject}/sub-{subject}_subcortex_summary.pkl',
-        csv = 'deriv/tmp/summary_ami_malf/sub-{subject}/sub-{subject}_subcortex_summary.csv'
+        pkl = 'deriv/summary/7TAMI/sub-{subject}/sub-{subject}_subcortex_summary.pkl',
+        csv = 'deriv/summary/7TAMI/sub-{subject}/sub-{subject}_subcortex_summary.csv'
     group: 'subj'
-    script: '../../scripts/extract_subcortex.py'
+    script: '../../scripts/python/extract_subcortex.py'
 
 # Concatenate stats across subjects
 rule concatenate_ami_malf_qmri:
-    input: expand('deriv/tmp/summary_ami_malf/sub-{subject}/sub-{subject}_{{atlas}}_summary.pkl', subject=subjects)
+    input: expand('deriv/summary/7TAMI/sub-{subject}/sub-{subject}_{{atlas}}_summary.pkl', subject=subjects)
     output:
-        pkl = 'deriv/tmp/summary_ami_malf/sub-patients/sub-patients_{atlas}_summary.pkl',
-        csv = 'deriv/tmp/summary_ami_malf/sub-patients/sub-patients_{atlas}_summary.csv'
+        pkl = 'deriv/summary/7TAMI/sub-patients/sub-patients_{atlas}_summary.pkl',
+        csv = 'deriv/summary/7TAMI/sub-patients/sub-patients_{atlas}_summary.csv'
     group: 'group'
     run:
         import pandas as pd
