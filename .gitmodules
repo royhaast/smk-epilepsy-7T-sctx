@@ -1,3 +1,6 @@
 [submodule "workflow/scripts/presurfer"]
 	path = workflow/scripts/presurfer
 	url = https://github.com/srikash/presurfer.git
+[submodule "workflow/scripts/spm12"]
+	path = workflow/scripts/spm12
+	url = https://github.com/spm/spm12.git

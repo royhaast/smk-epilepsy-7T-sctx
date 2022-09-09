@@ -32,7 +32,7 @@ def collect_input(wildcards,run='01'):
         'b1map_m' : 'deriv/gradcorrect/sub-{subject}/fmap/sub-{subject}_part-mag_run-01_TB1TFL.nii.gz'.format(subject=subject)
     }
 
-# Copy data for B1 correction
+# Copy data for B1+ correction
 rule prepare_b1correct:
     input: unpack(collect_input)
     output:
@@ -52,6 +52,7 @@ rule prepare_b1correct:
             file_out = output[json].split('.nii')[0]
             os.system('cp {}.json {}.json'.format(file_in, file_out))
 
+# Resample B1+ map to MP2RAGE
 rule resample_b1map:
     input:
         unpack(collect_input),
@@ -68,8 +69,7 @@ rule b1correct:
     input: 'deriv/presurfer/sub-{subject}/B1reslicedImageB1mapP.nii'
     output:
         uni = 'deriv/presurfer/sub-{subject}/ImageUni_B1corrected.nii',
-        t1map = 'deriv/presurfer/sub-{subject}/T1map_B1corrected.nii',
-        flaws = 'deriv/presurfer/sub-{subject}/syn_FLAWS_ImageUni_den_B1corrected.nii'
+        t1map = 'deriv/presurfer/sub-{subject}/T1map_B1corrected.nii'
     params:
         out_folder = 'deriv/presurfer/sub-{subject}',
         wrapper = 'scripts/b1correct/b1correct.sh',
