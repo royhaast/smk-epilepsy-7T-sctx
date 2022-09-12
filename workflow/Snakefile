@@ -27,20 +27,22 @@ wildcard_constraints:
 # Expected output
 rule all:
     input:
-        rules.other_all.input
+        'deriv/freesurfer/aseg_volume.txt'
+        # rules.other_all.input
 
 # MP2RAGE
 include: 'rules/mp2rage.smk'
 
-# AMI-MALF
-include: 'rules/ami_malf.smk'
+# # AMI-MALF
+# include: 'rules/ami_malf.smk'
 
-# THOMAS
-include: 'rules/thomas.smk'
+# # THOMAS
+# include: 'rules/thomas.smk'
 
-# SURFACE-BASED MORPHOMETRY
-module other_workflow:
-    snakefile: "../surfmorph_workflow/Snakefile"
-    config: "../surfmorph_workflow/config/config.json"
+# # SURFACE-BASED MORPHOMETRY
+# module other_workflow:
+#     snakefile: "../surfmorph_workflow/Snakefile"
+#     config: "../surfmorph_workflow/config/config.json"
 
-use rule * from other_workflow as other_*
+# use rule * from other_workflow as other_*
+

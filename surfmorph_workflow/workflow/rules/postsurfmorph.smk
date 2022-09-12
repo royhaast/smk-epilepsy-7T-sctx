@@ -1,4 +1,3 @@
-##TODO: fix this (again) to take into account all (i.e., rigid, affine) transforms..... buh
 # Convert vtk to gifti
 rule vtk_to_gifti_mni_space:
    input: 

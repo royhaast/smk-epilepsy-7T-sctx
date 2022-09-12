@@ -71,6 +71,19 @@ rule resample_ami_malf:
         mri_convert {input.ami} {output} -rl {input.t1} -rt nearest
         """
 
+# # Generate snapshot of WMn T1 map with THOMAS result overlaid
+# rule snapshot_7TAMI_seg:
+#     input: 
+#         t1map = 'deriv/subcortical_atlas/sub-{subject}/THOMAS_T1MAP/sub-{subject}_acq-MP2RAGE_desc-WMnull+denoised_T1map.nii.gz',
+#         atlas = 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_DGN_SBA_v9_to_subj.nii.gz'
+#     output: 'deriv/snapshots/7TAMI/sub-{subject}_qc.png'
+#     group: 'mp2rage'
+#     shell:
+#         """
+#         fsleyes render --scene lightbox --outfile {output} --crop 5 --zaxis 2 --zrange 120 180 -ss 1.2 \
+#         -nc 8 {input.t1map} {input.atlas} -ot label
+#         """
+
 # Prepare results for surfmorph analyses
 rule create_symlinks_for_surfmorph:
 #TODO edit to create symlinks

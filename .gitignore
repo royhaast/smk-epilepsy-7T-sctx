@@ -1,6 +1,9 @@
 # Study-specific ignore
+.snakemake/
 *.nii.gz
 test_data/
+deriv/
+workflow/scripts/b1correct/code_cemerem/
 
 # Standard Python stuff
 # Byte-compiled / optimized / DLL files

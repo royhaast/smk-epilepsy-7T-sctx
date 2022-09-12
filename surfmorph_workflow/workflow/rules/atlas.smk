@@ -33,7 +33,6 @@ rule atlas_dilate:
     container: config['containers']['surfmorph']    
     shell:
         """
-        # c3d {input} -dilate 1 5x5x5vox -o {output}
         fslmaths {input} -kernel boxv 5 -dilD {output}
         """
 

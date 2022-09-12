@@ -1,4 +1,4 @@
-bids_decoder: resources/participants.tsv
+participants: resources/participants.tsv
 t1w_picker: resources/t1w_run_picker.csv
 
 containers:

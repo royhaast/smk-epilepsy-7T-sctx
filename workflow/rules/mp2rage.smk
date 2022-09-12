@@ -3,14 +3,14 @@
 
 # Gradient-distortion correction
 rule gradcorrect:
-    input: 'bids/sub-{subject}/tar2bids.done'
+    input: 'test_data/bids/sub-{subject}/tar2bids.done'
     output:
         output = 'deriv/gradcorrect/sub-{subject}/sub-{subject}_scans.tsv'
     params:
-        bids_folder = 'bids', #TODO specify bids folder in config
-        deriv_folder = 'deriv', #TODO specify deriv folder in config
+        bids_folder = 'test_data/bids',
+        deriv_folder = 'deriv',
         gradcorrect = config['containers']['gradcorrect'],
-        script = 'scripts/gradcorrect/run.sh',
+        script = 'workflow/scripts/gradcorrect/run.sh',
         coeff = config['gradientfile']
     shell:
         """
@@ -18,23 +18,25 @@ rule gradcorrect:
         """   
 
 # Function to define input paths
-def collect_input(wildcards,run='01'):
+def collect_input(wildcards,run='01',dir='test_data/bids'):
     subject = f'{wildcards.subject}'
     run = t1w_dict[subject]
 
     return {
-        'inv1'    : 'deriv/gradcorrect/sub-{subject}/anat/sub-{subject}_inv-1_run-{run}_part-mag_MP2RAGE.nii.gz'.format(subject=subject,run=run),
-        'inv2'    : 'deriv/gradcorrect/sub-{subject}/anat/sub-{subject}_inv-2_run-{run}_part-mag_MP2RAGE.nii.gz'.format(subject=subject,run=run),
-        't1map'   : 'deriv/gradcorrect/sub-{subject}/anat/sub-{subject}_acq-MP2RAGE_run-{run}_T1map.nii.gz'.format(subject=subject,run=run),
-        'uni-den' : 'deriv/gradcorrect/sub-{subject}/anat/sub-{subject}_acq-MP2RAGE_run-{run}_T1w.nii.gz'.format(subject=subject,run=run),
-        'uni'     : 'deriv/gradcorrect/sub-{subject}/anat/sub-{subject}_acq-UNI_run-{run}_MP2RAGE.nii.gz'.format(subject=subject,run=run),
-        'b1map'   : 'deriv/gradcorrect/sub-{subject}/fmap/sub-{subject}_part-phase_run-01_TB1TFL.nii.gz'.format(subject=subject),
-        'b1map_m' : 'deriv/gradcorrect/sub-{subject}/fmap/sub-{subject}_part-mag_run-01_TB1TFL.nii.gz'.format(subject=subject)
+        'inv1'    : '{dir}/sub-{subject}/anat/sub-{subject}_inv-1_run-{run}_part-mag_MP2RAGE.nii.gz'.format(dir=dir,subject=subject,run=run),
+        'inv2'    : '{dir}/sub-{subject}/anat/sub-{subject}_inv-2_run-{run}_part-mag_MP2RAGE.nii.gz'.format(dir=dir,subject=subject,run=run),
+        't1map'   : '{dir}/sub-{subject}/anat/sub-{subject}_acq-MP2RAGE_run-{run}_T1map.nii.gz'.format(dir=dir,subject=subject,run=run),
+        'uni-den' : '{dir}/sub-{subject}/anat/sub-{subject}_acq-MP2RAGE_run-{run}_T1w.nii.gz'.format(dir=dir,subject=subject,run=run),
+        'uni'     : '{dir}/sub-{subject}/anat/sub-{subject}_acq-UNI_run-{run}_MP2RAGE.nii.gz'.format(dir=dir,subject=subject,run=run),
+        'b1map'   : '{dir}/sub-{subject}/fmap/sub-{subject}_part-phase_run-01_TB1TFL.nii.gz'.format(dir=dir,subject=subject),
+        'b1map_m' : '{dir}/sub-{subject}/fmap/sub-{subject}_part-mag_run-01_TB1TFL.nii.gz'.format(dir=dir,subject=subject)
     }
 
 # Copy data for B1+ correction
 rule prepare_b1correct:
-    input: unpack(collect_input)
+    input: 
+        unpack(lambda wildcards: collect_input(wildcards,dir='test_data/bids')),
+        'deriv/gradcorrect/sub-{subject}/sub-{subject}_scans.tsv'
     output:
         uni = 'deriv/presurfer/sub-{subject}/ImageUni.nii',
         inv1 = 'deriv/presurfer/sub-{subject}/ImageTI1.nii',
@@ -43,9 +45,12 @@ rule prepare_b1correct:
     run:
         import os
         os.system('rm deriv/presurfer/sub-{}/*.nii*'.format(wildcards.subject))
+        
+        output_updated = collect_input(wildcards, dir='deriv/gradcorrect')
+        print(output_updated)
 
         for image in output.keys():
-            os.system('mri_convert {} {} -nc'.format(input[image], output[image]))
+            os.system('mri_convert {} {} -nc'.format(output_updated[image], output[image]))
         
         for json in ['uni','b1map']:
             file_in = input[json].split('.nii.gz')[0]
@@ -72,8 +77,8 @@ rule b1correct:
         t1map = 'deriv/presurfer/sub-{subject}/T1map_B1corrected.nii'
     params:
         out_folder = 'deriv/presurfer/sub-{subject}',
-        wrapper = 'scripts/b1correct/b1correct.sh',
-        b1correct = 'scripts/b1correct/b1correct_cemerem.m'
+        wrapper = 'workflow/scripts/b1correct/b1correct.sh',
+        b1correct = 'workflow/scripts/b1correct/b1correct_cemerem.m'
     shell:
         """
         bash {params.wrapper} {params.b1correct} `realpath {params.out_folder}`
@@ -89,8 +94,8 @@ rule presurfer:
 	    mask = 'deriv/presurfer/sub-{subject}/presurf_MPRAGEise/presurf_UNI/ImageUni_B1corrected_MPRAGEised_brainmask.nii',
         classes = expand('deriv/presurfer/sub-{{subject}}/presurf_INV2/ImageTI2_class{i}.nii', i=range(3,7))
     params:
-        wrapper = 'scripts/presurfer/presurfer.sh',
-        presurf = 'scripts/presurfer/presurfer.m'
+        wrapper = 'workflow/scripts/presurfer/presurfer.sh',
+        presurf = 'workflow/scripts/presurfer/presurfer.m'
     group: 'mp2rage'        
     shell:
         """
@@ -154,7 +159,9 @@ rule copy_t1w:
 # Process the denoised image using FreeSurfer
 rule freesurfer:
     input: 'deriv/freesurfer/sub-{subject}/mri/orig/001.mgz'
-    output: 'deriv/freesurfer/sub-{subject}/scripts/recon-all.done'
+    output:
+        done = 'deriv/freesurfer/sub-{subject}/scripts/recon-all.done',
+        stats = 'deriv/freesurfer/sub-{subject}/stats/aseg.stats'
     params:
         sd = 'deriv/freesurfer'
     group: 'mp2rage'        
@@ -211,16 +218,3 @@ rule asegstats:
         export SUBJECTS_DIR={params.sd}
         asegstats2table --subjects {params.subjects} -t {output}
         """
-
-# # Generate snapshot of WMn T1 map with THOMAS result overlaid
-# rule snapshot_7TAMI_seg:
-#     input: 
-#         t1map = 'deriv/subcortical_atlas/sub-{subject}/THOMAS_T1MAP/sub-{subject}_acq-MP2RAGE_desc-WMnull+denoised_T1map.nii.gz',
-#         atlas = 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_DGN_SBA_v9_to_subj.nii.gz'
-#     output: 'deriv/snapshots/7TAMI/sub-{subject}_qc.png'
-#     group: 'mp2rage'
-#     shell:
-#         """
-#         fsleyes render --scene lightbox --outfile {output} --crop 5 --zaxis 2 --zrange 120 180 -ss 1.2 \
-#         -nc 8 {input.t1map} {input.atlas} -ot label
-#         """

@@ -1,4 +1,4 @@
-bids_decoder: resources/bids_decoder.csv
+bids_decoder: ../resources/participants.tsv
 
 # What atlas to use as input
 atlas: ami
