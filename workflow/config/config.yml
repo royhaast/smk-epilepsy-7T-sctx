@@ -7,3 +7,5 @@ containers:
     freesurfer: /home/rhaast/00_SOFTWARE/containers/pwighton_freesurfer_v7.1.1.sif
 
 gradientfile: /DATA_VOL_PROJECTS/CNS/EPILEPSY/Epinov_pipeline/template/gradCorrect/coeff_SC72CD.grad
+
+thomas: /home/rhaast/00_SOFTWARE/thomas_new

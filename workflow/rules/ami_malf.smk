@@ -65,24 +65,81 @@ rule resample_ami_malf:
         ami = 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_DGN_SBA_v9_to_subj.nii.gz',
         t1 = 'deriv/presurfer/sub-{subject}/T1map_B1corrected.nii'
     output:
-        ami = 'deriv/summary/7TAMI/sub-{subject}/sub-{subject}_space-native_7TAMI60_qfullJF_Labels.nii.gz',
+        ami = 'deriv/summary/sub-{subject}/7TAMI/sub-{subject}_space-native_7TAMI60_qfullJF_Labels.nii.gz',
     shell:
         """
         mri_convert {input.ami} {output} -rl {input.t1} -rt nearest
         """
 
-# # Generate snapshot of WMn T1 map with THOMAS result overlaid
-# rule snapshot_7TAMI_seg:
-#     input: 
-#         t1map = 'deriv/subcortical_atlas/sub-{subject}/THOMAS_T1MAP/sub-{subject}_acq-MP2RAGE_desc-WMnull+denoised_T1map.nii.gz',
-#         atlas = 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_DGN_SBA_v9_to_subj.nii.gz'
-#     output: 'deriv/snapshots/7TAMI/sub-{subject}_qc.png'
-#     group: 'mp2rage'
-#     shell:
-#         """
-#         fsleyes render --scene lightbox --outfile {output} --crop 5 --zaxis 2 --zrange 120 180 -ss 1.2 \
-#         -nc 8 {input.t1map} {input.atlas} -ot label
-#         """
+# Generate snapshot of WMn T1 map with THOMAS result overlaid
+rule snapshot_ami_malf_seg:
+    input: 
+        t1w = 'deriv/presurfer/sub-{subject}/sub-{subject}_acq-MP2RAGE_proc-B1map+PreSurfer_T1w.nii.gz',
+        atlas = 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_DGN_SBA_v9_to_subj.nii.gz'
+    output: 'deriv/snapshots/7TAMI/sub-{subject}_qc.png'
+    group: 'mp2rage'
+    shell:
+        """
+        fsleyes render --scene lightbox --outfile {output} --crop 5 --zaxis 2 --zrange 120 180 -ss 1.2 \
+        -nc 8 {input.t1w} {input.atlas} -ot label
+        """
+
+# Extract statistics from 7T-AMI MALF thalamic segmentations
+rule thalamic_ami_malf_stats:
+    input:
+        stats = 'deriv/freesurfer/aseg_volume.txt',
+        thalamus = 'deriv/summary/sub-{subject}/7TAMI/sub-{subject}_space-native_7TAMI60_qfullJF_Labels.nii.gz',
+        t1 = 'deriv/presurfer/sub-{subject}/T1map_B1corrected.nii',
+        dbm = 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_T1w_bet_2_subj1CompositeWarp_JacL.nii.gz',
+        mask = 'deriv/presurfer/sub-{subject}/presurf_INV2/sub-{subject}_inv-2_part-mag_MP2RAGE_stripmask.nii.gz'
+    params:
+        t1_threshold = 3000,  
+        subject_info = 'resources/participants.tsv',
+        lut = 'resources/amilut.csv'
+    output:
+        pkl = 'deriv/summary/sub-{subject}/7TAMI/sub-{subject}_ami_summary.pkl',
+        csv = 'deriv/summary/sub-{subject}/7TAMI/sub-{subject}_ami_summary.csv'
+    group: 'subj'
+    script: '../scripts/python/extract_thalamus_ami.py'
+
+# Extract statistics from 7T-AMI non-thalamic segmentations
+rule subcortical_ami_malf_stats:
+    input:
+        stats = 'deriv/freesurfer/aseg_volume.txt',
+        subcortex = 'deriv/summary/sub-{subject}/7TAMI/sub-{subject}_space-native_7TAMI60_qfullJF_Labels.nii.gz',
+        t1 = 'deriv/presurfer/sub-{subject}/T1map_B1corrected.nii',
+        dbm = 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_T1w_bet_2_subj1CompositeWarp_JacL.nii.gz', 
+        mask = 'deriv/presurfer/sub-{subject}/presurf_INV2/sub-{subject}_inv-2_part-mag_MP2RAGE_stripmask.nii.gz'
+    params:
+        t1_threshold = 3000,   
+        subject_info = 'resources/participants.tsv',
+        lut = 'resources/amilut_subcortex.csv'
+    output:
+        pkl = 'deriv/summary/sub-{subject}/7TAMI/sub-{subject}_subcortex_summary.pkl',
+        csv = 'deriv/summary/sub-{subject}/7TAMI/sub-{subject}_subcortex_summary.csv'
+    group: 'subj'
+    script: '../scripts/python/extract_subcortex.py'
+
+# Concatenate stats across subjects
+rule concatenate_ami_malf_stats:
+    input: expand('deriv/summary/sub-{subject}/7TAMI/sub-{subject}_{{atlas}}_summary.pkl', subject=subjects)
+    output:
+        pkl = 'deriv/summary/sub-all/7TAMI/sub-all_{atlas}_summary.pkl',
+        csv = 'deriv/summary/sub-all/7TAMI/sub-all_{atlas}_summary.csv'
+    group: 'group'
+    run:
+        import pandas as pd
+
+        df_concat = []
+        for s in range(0,len(input)):
+            df = pd.read_pickle(input[s])
+            df_concat.append(df)
+
+        df_concat = pd.concat(df_concat, ignore_index=True)
+
+        # Save to file
+        df_concat.to_pickle(output.pkl)
+        df_concat.to_csv(output.csv)
 
 # # Prepare results for surfmorph analyses
 # rule create_symlinks_for_surfmorph:
@@ -98,61 +155,4 @@ rule resample_ami_malf:
 #         """
 #         fslmaths {input.mask} -bin -mul {input.ami} {output.ami}
 #         cp {input.t1w} {output.t1w}
-#         """
-
-# # Extract statistics from 7T-AMI MALF thalamic segmentations
-# rule thalamic_ami_malf_stats:
-#     input:
-#         stats = 'deriv/freesurfer/aseg_volume.txt',
-#         thalamus = 'deriv/summary/7TAMI/sub-{subject}/sub-{subject}_space-native_7TAMI60_qfullJF_Labels.nii.gz',
-#         t1 = 'deriv/presurfer/sub-{subject}/T1map_B1corrected.nii',
-#         mask = 'deriv/presurfer/sub-{subject}/presurf_INV2/sub-{subject}_inv-2_part-mag_MP2RAGE_stripmask.nii.gz'
-#     params:
-#         dbm = 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_T1w_bet_2_subj1CompositeWarp_JacL.nii.gz'
-#         t1_threshold = 3000,  
-#         subject_info = 'resources/participants.tsv',
-#         lut = 'resources/amilut.csv'
-#     output:
-#         pkl = 'deriv/summary/7TAMI/sub-{subject}/sub-{subject}_ami_summary.pkl',
-#         csv = 'deriv/summary/7TAMI/sub-{subject}/sub-{subject}_ami_summary.csv'
-#     group: 'subj'
-#     script: '../../scripts/python/extract_thalamus_ami.py'
-
-# # Extract statistics from 7T-AMI non-thalamic segmentations
-# rule subcortical_ami_malf_stats:
-#     input:
-#         stats = 'deriv/freesurfer/aseg_volume.txt',
-#         subcortex = 'deriv/summary/7TAMI/sub-{subject}/sub-{subject}_space-native_7TAMI60_qfullJF_Labels.nii.gz',
-#         t1 = 'deriv/presurfer/sub-{subject}/T1map_B1corrected.nii',
-#         mask = 'deriv/presurfer/sub-{subject}/presurf_INV2/sub-{subject}_inv-2_part-mag_MP2RAGE_stripmask.nii.gz'
-#     params:
-#         dbm = 'deriv/atlas/sub-{subject}/7TAMI/7TAmi_T1w_bet_2_subj1CompositeWarp_JacL.nii.gz', 
-#         t1_threshold = 3000,   
-#         subject_info = 'resources/participants.tsv',
-#         lut = 'resources/amilut_subcortex.csv'
-#     output:
-#         pkl = 'deriv/summary/7TAMI/sub-{subject}/sub-{subject}_subcortex_summary.pkl',
-#         csv = 'deriv/summary/7TAMI/sub-{subject}/sub-{subject}_subcortex_summary.csv'
-#     group: 'subj'
-#     script: '../../scripts/python/extract_subcortex.py'
-
-# # Concatenate stats across subjects
-# rule concatenate_ami_malf_qmri:
-#     input: expand('deriv/summary/7TAMI/sub-{subject}/sub-{subject}_{{atlas}}_summary.pkl', subject=subjects)
-#     output:
-#         pkl = 'deriv/summary/7TAMI/sub-patients/sub-patients_{atlas}_summary.pkl',
-#         csv = 'deriv/summary/7TAMI/sub-patients/sub-patients_{atlas}_summary.csv'
-#     group: 'group'
-#     run:
-#         import pandas as pd
-
-#         df_concat = []
-#         for s in range(0,len(input)):
-#             df = pd.read_pickle(input[s])
-#             df_concat.append(df)
-
-#         df_concat = pd.concat(df_concat, ignore_index=True)
-
-#         # Save to file
-#         df_concat.to_pickle(output.pkl)
-#         df_concat.to_csv(output.csv)
+#         """        

@@ -27,8 +27,8 @@ wildcard_constraints:
 # Expected output
 rule all:
     input:
-        expand('deriv/summary/7TAMI/sub-{subject}/sub-{subject}_space-native_7TAMI60_qfullJF_Labels.nii.gz', subject=subjects)
-        # rules.other_all.input
+        expand('deriv/summary/sub-all/{atlas}}/sub-all_{atlas}_summary.pkl' subject=subjects, atlas=['7TAMI','THOMAS_T1MAP'])
+        rules.other_all.input
 
 # MP2RAGE
 include: 'rules/mp2rage.smk'
@@ -36,13 +36,12 @@ include: 'rules/mp2rage.smk'
 # AMI-MALF
 include: 'rules/ami_malf.smk'
 
-# # THOMAS
-# include: 'rules/thomas.smk'
+# THOMAS
+include: 'rules/thomas.smk'
 
-# # SURFACE-BASED MORPHOMETRY
-# module other_workflow:
-#     snakefile: "../surfmorph_workflow/Snakefile"
-#     config: "../surfmorph_workflow/config/config.json"
+# SURFACE-BASED MORPHOMETRY
+module other_workflow:
+    snakefile: "../surfmorph_workflow/Snakefile"
+    config: "../surfmorph_workflow/config/config.json"
 
-# use rule * from other_workflow as other_*
-
+use rule * from other_workflow as other_*

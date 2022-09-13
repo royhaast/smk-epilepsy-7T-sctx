@@ -36,9 +36,7 @@ subject_path = '../deriv/{}/sub-{}'
 subject_info = pd.read_csv(snakemake.params.subject_info)
 
 # Filter subjects file
-subject_info = subject_info.drop_duplicates(subset=['dicom'], ignore_index=True)
-subject_info['bids'] = [ '{:03d}'.format(i) for i in subject_info['bids'] ]
-subject_info = subject_info.loc[subject_info['bids'].isin(['{}'.format(snakemake.wildcards.subject)])]
+subject_info = subject_info.loc[subject_info['ID'].isin(['{}'.format(snakemake.wildcards.subject)])]
 
 # Load aseg stats output for eTIV
 aseg = pd.read_csv(snakemake.input.stats,delimiter="\t")
@@ -61,14 +59,8 @@ t1_threshold = snakemake.params.t1_threshold
 seg_img[t1_img>t1_threshold] = 0
 seg_img[mask_img!=1] = 0
 
-# If present, load other data
-if Path(snakemake.params.dbm).is_file():
-    jac = True
-
-    # Load R2s and QSM data
-    jac_img = load_nifti(snakemake.params.dbm)
-else:
-    jac = False
+# Load DBM data
+jac_img = load_nifti(snakemake.input.dbm)
 
 # Get voxel volume
 zooms = subcortex_file.header.get_zooms()
@@ -80,18 +72,14 @@ for l in range(0,len(lut)):
     volume_mm   = np.sum(np.isin(seg_img, lut.iloc[l]['label'], assume_unique=True)) * voxel_mm3
     volume_perc = (volume_mm / etiv) * 100
     t1     = np.nanmean(t1_img[np.isin(seg_img, lut.iloc[l]['label'], assume_unique=True)])
-
-    if jac == True:
-        dbm = np.nanmean(jac_img[np.isin(seg_img, lut.iloc[l]['label'], assume_unique=True)])
-    else:
-        dbm = -999
+    dbm = np.nanmean(jac_img[np.isin(seg_img, lut.iloc[l]['label'], assume_unique=True)])
 
     d.append(('sub-'+snakemake.wildcards.subject,
-                subject_info.iloc[0]['age'],
-                subject_info.iloc[0]['sex'],
+                subject_info.iloc[0]['AGE'],
+                subject_info.iloc[0]['SEX'],
                 etiv,
-                subject_info.iloc[0]['type'],
-                subject_info.iloc[0]['side'],
+                subject_info.iloc[0]['TYPE'],
+                subject_info.iloc[0]['SIDE'],
                 lut.iloc[l]['label'],
                 lut.iloc[l]['group'],
                 lut.iloc[l]['roi'],

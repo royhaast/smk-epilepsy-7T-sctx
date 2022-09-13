@@ -1,0 +1,14 @@
+label,roi,group,r,g,b,a
+1,THALAMUS,all,0,0,0,0
+2,AV,anterior,0,0,0,0
+4,VA,lateral,0,0,0,0
+5,VLa,lateral,0,0,0,0
+6,VLP,lateral,0,0,0,0
+7,VPL,lateral,0,0,0,0
+8,Pul,posterior,0,0,0,0
+9,LGN,posterior,0,0,0,0
+10,MGN,posterior,0,0,0,0
+11,CM,medial,0,0,0,0
+12,MD-Pf,medial,0,0,0,0
+13,Hb,medial,0,0,0,0
+14,MTT,wm,0,0,0,0
