@@ -1,6 +1,8 @@
 # Snakemake workflow: `smk-epilepsy-7T-sctx`
 Snakemake workflow for processing BIDSified 7T MRI data as described in "title here" (link here)
 
+![Analysis pipeline](https://github.com/royhaast/smk-epilepsy-7T-sctx/blob/main/resources/pipeline.jpg?raw=true)
+
 :minidisc: Inputs:
 - participants.tsv file with target subject IDs for both controls (prefixed with C, e.g., sub-C001) and patients.
 - For each subject:
