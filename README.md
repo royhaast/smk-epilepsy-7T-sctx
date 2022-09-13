@@ -1,5 +1,7 @@
 # Snakemake workflow: `smk-epilepsy-7T-sctx`
-Snakemake workflow for processing BIDSified 7T MRI data as described in "title here" (link here)
+Snakemake workflow for processing BIDSified 7T MRI data as described in
+"Multi-scale structural alterations of basal ganglia in focal epilepsy as demonstrated by 7T MRI"
+(link here)
 
 ![Analysis pipeline](https://github.com/royhaast/smk-epilepsy-7T-sctx/blob/main/resources/pipeline.jpg?raw=true)
 
