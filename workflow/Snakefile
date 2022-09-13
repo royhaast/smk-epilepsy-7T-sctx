@@ -27,14 +27,14 @@ wildcard_constraints:
 # Expected output
 rule all:
     input:
-        'deriv/freesurfer/aseg_volume.txt'
+        expand('deriv/summary/7TAMI/sub-{subject}/sub-{subject}_space-native_7TAMI60_qfullJF_Labels.nii.gz', subject=subjects)
         # rules.other_all.input
 
 # MP2RAGE
 include: 'rules/mp2rage.smk'
 
-# # AMI-MALF
-# include: 'rules/ami_malf.smk'
+# AMI-MALF
+include: 'rules/ami_malf.smk'
 
 # # THOMAS
 # include: 'rules/thomas.smk'

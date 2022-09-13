@@ -166,13 +166,9 @@ rule freesurfer:
         sd = 'deriv/freesurfer'
     group: 'mp2rage'        
     container: config['containers']['freesurfer']
-    threads: 16
-    resources:
-        time = 600,
-        mem_mb = 64000
     shell:
         """
-        recon-all -all -s sub-{wildcards.subject} -hires -no-wsgcaatlas -notal-check -threads 16 -sd {params.sd}
+        recon-all -all -s sub-{wildcards.subject} -hires -no-wsgcaatlas -notal-check -threads 8 -sd {params.sd}
         """
 
 # Create ventricles mask
@@ -208,11 +204,10 @@ rule reslice_t1:
 rule asegstats:
     input: expand('deriv/freesurfer/sub-{subject}/stats/aseg.stats',subject=subjects),
     params:
-        subjects = ['sub-{}'.format(s) for s in subjects],
+        subjects = ['sub-{} '.format(s) for s in subjects],
         sd = 'deriv/freesurfer'
     output: 'deriv/freesurfer/aseg_volume.txt'
     group: 'mp2rage'
-    container: config['containers']['fmriprep']
     shell:
         """
         export SUBJECTS_DIR={params.sd}
