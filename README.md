@@ -36,7 +36,10 @@ Snakemake workflow for processing BIDSified 7T MRI data as described in
 https://doi.org/10.5281/zenodo.4626841.
 
 - More info on the 7T-AMI atlas can be found in the original paper:
-"Automatic segmentation of deep grey nuclei using a high-resolution 7T magnetic resonance imaging atlas - Quantification of T1 values in healthy volunteers" (https://doi.org/10.1111/ejn.15575)
+"Automatic segmentation of deep grey nuclei using a high-resolution 7T magnetic resonance imaging atlas - Quantification of T1 values in healthy volunteers" (https://doi.org/10.1111/ejn.15575). A recipe to build a Singularity can be found here: https://github.com/AlexandreCABANE/7TAMI_MALF
+
+- THOMAS is developed by Manoj Saranathan. You can find the original code here:
+https://github.com/thalamicseg/thomas_new
 
 - Surfmorph is developed by Ali Khan (@akhanf). You can find the original code here:
 https://github.com/khanlab/surfmorph
